@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 load_dotenv()
 import os, asyncio
 
-bot = commands.Bot(command_prefix='.')
+
+help_command = commands.DefaultHelpCommand(no_category='All Commands')
+bot = commands.Bot(command_prefix=commands.when_mentioned_or('.'), help_command=help_command)
 
 tasks = {}
 
@@ -16,20 +18,20 @@ async def on_ready():
 	print('------')
 
 
-@bot.command(help="Spam Ping a user.")
-async def ping(ctx, target:discord.User=None):
+@bot.command(help="Spam Ping a user.", category="All Commands", aliases=["spam"])
+async def ping(ctx, target:discord.User=None, *message):
 	if target is None:
 		return await ctx.send("Whom should i disturb?")
 	if tasks.get(target.id) is None:
 		await ctx.send(f"Spamming target: {target.mention}.")
-		task = mass_ping(ctx, target)
+		task = mass_ping(ctx, target, ' '.join(message))
 		tasks[target.id] = {"task": task, "owner": ctx.author.id}
 	else:
 		await ctx.send(f"Don't you think i'm already spamming {target.mention}?")
 
 
 
-@bot.command(help="Stop spam pinging a user.")
+@bot.command(help="Stop spam pinging a user.", category="All Commands")
 async def stop(ctx, target:discord.User=None):
 	if target is None:
 		return await ctx.send("Please provide a user to stop pinging")
@@ -46,7 +48,7 @@ async def stop(ctx, target:discord.User=None):
 
 
 
-@bot.command(help="List the users who are being spammed.")
+@bot.command(help="List the users who are being spammed.", category="All Commands")
 async def list(ctx):
 	pinglist = ""
 	count = 1
@@ -65,12 +67,12 @@ async def list(ctx):
 
 
 
-def mass_ping(ctx, target:discord.User):
-	async def ping(ctx, target:discord.User):
+def mass_ping(ctx, target:discord.User, message):
+	async def ping(ctx, target:discord.User, message):
 		while True:
 			await asyncio.sleep(1)
-			await ctx.send(f"{target.mention}")
-	loop = asyncio.create_task(ping(ctx, target))
+			await ctx.send(f"{target.mention} "+str(message))
+	loop = asyncio.create_task(ping(ctx, target, message))
 	return loop
 	
 
